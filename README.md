@@ -9,9 +9,7 @@
 
 
 ## 🔹 Bước 2: Tải dự án về
-
-Gõ lệnh sau vào terminal của VsCode
-
+Trong VS Code, mở terminal và nhập lệnh sau hoặc sao chép (clone) dự án về máy:
 ```bash
 git clone https://github.com/nhom9-lapTrinhMang/Elearning_4
 ```
