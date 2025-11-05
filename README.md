@@ -10,6 +10,8 @@
 
 ## 🔹 Bước 2: Tải dự án về
 
+Gõ lệnh sau vào terminal của VsCode
+
 ```bash
 git clone https://github.com/nhom9-lapTrinhMang/Elearning_4
 ```
