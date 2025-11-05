@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vue 3 Blog Application - Complete Demo</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/vue-router@4/dist/vue-router.global.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    <style>
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.3s ease; }
+        .fade-enter-from, .fade-leave-to { opacity: 0; }
+        .router-link-active { background-color: rgba(59, 130, 246, 0.1); color: rgb(37, 99, 235); }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app">
+        <!-- Navigation -->
+        <nav class="bg-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="flex justify-between h-16">
+                    <div class="flex items-center">
+                        <router-link to="/" class="text-xl font-bold text-blue-600">Vue 3 Blog</router-link>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <router-link to="/" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100">Home</router-link>
+                        <router-link to="/blogs" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100">Blogs</router-link>
+                        <router-link to="/about" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100">About</router-link>
+                        <router-link to="/contact" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100">Contact</router-link>
+                        <div v-if="!isLoggedIn" class="flex space-x-2">
+                            <router-link to="/login" class="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-700">Login</router-link>
+                            <router-link to="/register" class="border border-blue-600 text-blue-600 px-4 py-2 rounded-md text-sm font-medium hover:bg-blue-50">Register</router-link>
+                        </div>
+                        <div v-else class="flex items-center space-x-4">
+                            <router-link to="/dashboard" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100">Dashboard</router-link>
+                            <router-link to="/profile" class="px-3 py-2 rounded-md text-sm font-medium hover:bg-gray-100">Profile</router-link>
+                            <button @click="logout" class="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium hover:bg-red-700">Logout</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <main class="min-h-screen">
+            <transition name="fade" mode="out-in">
+                <router-view></router-view>
+            </transition>
+        </main>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-8">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p>&copy; 2025 Vue 3 Blog Application. Built with ❤️ using Vue 3, Vite, TailwindCSS.</p>
+                <div class="mt-4 space-x-4">
+                    <a href="#" class="text-gray-300 hover:text-white">Privacy Policy</a>
+                    <a href="#" class="text-gray-300 hover:text-white">Terms of Service</a>
+                    <a href="#" class="text-gray-300 hover:text-white">Support</a>
+                </div>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        const { createApp, ref, reactive, computed, onMounted } = Vue;
+        const { createRouter, createWebHashHistory } = VueRouter;
+
+        // Mock Data
+        const mockBlogs = [
+            {
+                id: 1,
+                title: "Getting Started with Vue 3 Composition API",
+                excerpt: "Learn how to use Vue 3's Composition API to build more maintainable and reusable components with better TypeScript support.",
+                content: "Vue 3 introduced the Composition API as a new way to organize and reuse logic in components. This powerful feature allows developers to write more maintainable code by grouping related functionality together rather than splitting it across different lifecycle hooks. The Composition API provides better TypeScript support and makes it easier to extract and reuse logic across components.",
+                author: "John Doe",
+                date: "2025-11-05",
+                image: "https://images.unsplash.com/photo-1633356122544-f134324a6cee?w=400",
+                category: "Vue.js",
+                tags: ["vue3", "composition-api", "tutorial"]
+            },
+            {
+                id: 2,
+                title: "Building Modern UIs with TailwindCSS",
+                excerpt: "Discover how to create beautiful, responsive designs using the utility-first CSS framework that's taking the web by storm.",
+                content: "TailwindCSS has revolutionized how we think about styling web applications. Instead of writing custom CSS, Tailwind provides utility classes that you can use directly in your HTML. This approach leads to faster development, better consistency, and easier maintenance. In this article, we'll explore the core concepts of Tailwind and build a complete responsive design.",
+                author: "Jane Smith",
+                date: "2025-11-04",
+                image: "https://images.unsplash.com/photo-1555066931-4365d14bab8c?w=400",
+                category: "CSS",
+                tags: ["tailwindcss", "ui", "design"]
+            },
+            {
+                id: 3,
+                title: "State Management with Pinia",
+                excerpt: "Master Vue 3 state management using Pinia, the official store library that makes state management simple and intuitive.",
+                content: "Pinia is the next generation state management library for Vue applications. It provides a simple and intuitive API for managing global state, with excellent TypeScript support and devtools integration. Pinia stores are reactive and can be easily tested and extended. This guide will show you how to set up Pinia and use it effectively in your Vue 3 applications.",
+                author: "Mike Johnson",
+                date: "2025-11-03",
+                image: "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=400",
+                category: "Vue.js",
+                tags: ["pinia", "state-management", "vue3"]
+            }
+        ];
+
+        // Components
+        const Home = {
+            template: `
+                <div>
+                    <!-- Hero Section -->
+                    <section class="bg-gradient-to-r from-blue-600 to-purple-600 text-white py-20">
+                        <div class="max-w-7xl mx-auto px-4 text-center">
+                            <h1 class="text-5xl font-bold mb-6">Welcome to Vue 3 Blog</h1>
+                            <p class="text-xl mb-8 max-w-3xl mx-auto">
+                                A modern, full-featured blog platform built with Vue 3, featuring authentication, 
+                                content management, and beautiful responsive design.
+                            </p>
+                            <div class="space-x-4">
+                                <router-link to="/blogs" class="bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-gray-100 transition">
+                                    Explore Blogs
+                                </router-link>
+                                <router-link to="/register" class="border border-white text-white px-8 py-3 rounded-lg font-semibold hover:bg-white hover:text-blue-600 transition">
+                                    Get Started
+                                </router-link>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Features Section -->
+                    <section class="py-20 bg-white">
+                        <div class="max-w-7xl mx-auto px-4">
+                            <div class="text-center mb-16">
+                                <h2 class="text-4xl font-bold text-gray-900 mb-4">Features</h2>
+                                <p class="text-xl text-gray-600 max-w-2xl mx-auto">Everything you need to create and manage a modern blog platform</p>
+                            </div>
+                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                <div class="text-center p-6">
+                                    <div class="w-16 h-16 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                        <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-xl font-bold mb-2">Lightning Fast</h3>
+                                    <p class="text-gray-600">Built with Vue 3 and Vite for ultra-fast development and performance.</p>
+                                </div>
+                                <div class="text-center p-6">
+                                    <div class="w-16 h-16 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                        <svg class="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-xl font-bold mb-2">Secure Authentication</h3>
+                                    <p class="text-gray-600">JWT-based auth with role-based access control and security.</p>
+                                </div>
+                                <div class="text-center p-6">
+                                    <div class="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17v4a2 2 0 002 2h4M11 7h6"></path>
+                                        </svg>
+                                    </div>
+                                    <h3 class="text-xl font-bold mb-2">Modern UI</h3>
+                                    <p class="text-gray-600">Beautiful responsive design with TailwindCSS components.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Recent Blogs -->
+                    <section class="py-20 bg-gray-50">
+                        <div class="max-w-7xl mx-auto px-4">
+                            <div class="text-center mb-12">
+                                <h2 class="text-4xl font-bold text-gray-900 mb-4">Recent Blog Posts</h2>
+                                <p class="text-xl text-gray-600">Check out our latest articles and tutorials</p>
+                            </div>
+                            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                <div v-for="blog in recentBlogs" :key="blog.id" class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition">
+                                    <img :src="blog.image" :alt="blog.title" class="w-full h-48 object-cover">
+                                    <div class="p-6">
+                                        <div class="text-blue-600 text-sm font-semibold mb-2">{{ blog.category }}</div>
+                                        <h3 class="text-xl font-bold mb-2">{{ blog.title }}</h3>
+                                        <p class="text-gray-600 mb-4">{{ blog.excerpt }}</p>
+                                        <div class="flex justify-between items-center">
+                                            <span class="text-sm text-gray-500">{{ blog.date }}</span>
+                                            <router-link :to="'/blogs/' + blog.id" class="text-blue-600 hover:text-blue-700 font-semibold">Read More</router-link>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-center mt-12">
+                                <router-link to="/blogs" class="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition">
+                                    View All Blogs
+                                </router-link>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            `,
+            setup() {
+                const recentBlogs = ref(mockBlogs.slice(0, 3));
+                return { recentBlogs };
+            }
+        };
+
+        const BlogList = {
+            template: `
+                <div class="max-w-7xl mx-auto px-4 py-12">
+                    <div class="text-center mb-12">
+                        <h1 class="text-4xl font-bold text-gray-900 mb-4">All Blog Posts</h1>
+                        <p class="text-xl text-gray-600">Discover articles, tutorials, and insights</p>
+                    </div>
+                    
+                    <!-- Search and Filter -->
+                    <div class="mb-8 flex flex-col md:flex-row gap-4">
+                        <div class="flex-1">
+                            <input v-model="searchQuery" type="text" placeholder="Search blogs..." 
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <select v-model="selectedCategory" class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">All Categories</option>
+                            <option value="Vue.js">Vue.js</option>
+                            <option value="CSS">CSS</option>
+                            <option value="JavaScript">JavaScript</option>
+                        </select>
+                    </div>
+
+                    <!-- Blog Grid -->
+                    <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                        <div v-for="blog in filteredBlogs" :key="blog.id" class="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition cursor-pointer"
+                             @click="$router.push('/blogs/' + blog.id)">
+                            <img :src="blog.image" :alt="blog.title" class="w-full h-48 object-cover">
+                            <div class="p-6">
+                                <div class="text-blue-600 text-sm font-semibold mb-2">{{ blog.category }}</div>
+                                <h3 class="text-xl font-bold mb-2">{{ blog.title }}</h3>
+                                <p class="text-gray-600 mb-4">{{ blog.excerpt }}</p>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">{{ blog.author }} • {{ blog.date }}</span>
+                                    <div class="flex space-x-1">
+                                        <span v-for="tag in blog.tags" :key="tag" class="bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs">
+                                            {{ tag }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const blogs = ref(mockBlogs);
+                const searchQuery = ref('');
+                const selectedCategory = ref('');
+                
+                const filteredBlogs = computed(() => {
+                    let filtered = blogs.value;
+                    
+                    if (searchQuery.value) {
+                        filtered = filtered.filter(blog => 
+                            blog.title.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
+                            blog.excerpt.toLowerCase().includes(searchQuery.value.toLowerCase())
+                        );
+                    }
+                    
+                    if (selectedCategory.value) {
+                        filtered = filtered.filter(blog => blog.category === selectedCategory.value);
+                    }
+                    
+                    return filtered;
+                });
+                
+                return { blogs, searchQuery, selectedCategory, filteredBlogs };
+            }
+        };
+
+        const BlogDetail = {
+            template: `
+                <div v-if="blog" class="max-w-4xl mx-auto px-4 py-12">
+                    <div class="mb-8">
+                        <button @click="$router.go(-1)" class="text-blue-600 hover:text-blue-700 mb-4">
+                            ← Back to Blogs
+                        </button>
+                        <div class="text-blue-600 text-sm font-semibold mb-2">{{ blog.category }}</div>
+                        <h1 class="text-4xl font-bold text-gray-900 mb-4">{{ blog.title }}</h1>
+                        <div class="flex items-center text-gray-600 mb-8">
+                            <span>By {{ blog.author }}</span>
+                            <span class="mx-2">•</span>
+                            <span>{{ blog.date }}</span>
+                        </div>
+                    </div>
+                    
+                    <img :src="blog.image" :alt="blog.title" class="w-full h-64 object-cover rounded-lg mb-8">
+                    
+                    <div class="prose prose-lg max-w-none">
+                        <p class="text-xl text-gray-700 mb-6">{{ blog.excerpt }}</p>
+                        <div class="text-gray-700 leading-relaxed">
+                            {{ blog.content }}
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 pt-8 border-t border-gray-200">
+                        <div class="flex flex-wrap gap-2">
+                            <span v-for="tag in blog.tags" :key="tag" class="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">
+                                #{{ tag }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="max-w-4xl mx-auto px-4 py-12 text-center">
+                    <h1 class="text-2xl font-bold text-gray-900">Blog not found</h1>
+                    <router-link to="/blogs" class="text-blue-600 hover:text-blue-700">← Back to Blogs</router-link>
+                </div>
+            `,
+            setup() {
+                const route = VueRouter.useRoute();
+                const blog = ref(null);
+                
+                onMounted(() => {
+                    const blogId = parseInt(route.params.id);
+                    blog.value = mockBlogs.find(b => b.id === blogId);
+                });
+                
+                return { blog };
+            }
+        };
+
+        const Login = {
+            template: `
+                <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+                    <div class="max-w-md w-full space-y-8">
+                        <div>
+                            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Sign in to your account</h2>
+                        </div>
+                        <form @submit.prevent="handleLogin" class="mt-8 space-y-6">
+                            <div class="rounded-md shadow-sm -space-y-px">
+                                <div>
+                                    <input v-model="form.email" type="email" required 
+                                           class="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="Email address">
+                                </div>
+                                <div>
+                                    <input v-model="form.password" type="password" required 
+                                           class="relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                           placeholder="Password">
+                                </div>
+                            </div>
+                            
+                            <div>
+                                <button type="submit" class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                    Sign In
+                                </button>
+                            </div>
+                            
+                            <div class="text-center">
+                                <p class="text-sm text-gray-600">
+                                    Demo credentials: admin@example.com / admin123
+                                </p>
+                                <router-link to="/register" class="font-medium text-blue-600 hover:text-blue-500">
+                                    Don't have an account? Sign up
+                                </router-link>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = VueRouter.useRouter();
+                const form = reactive({ email: '', password: '' });
+                
+                const handleLogin = () => {
+                    if (form.email === 'admin@example.com' && form.password === 'admin123') {
+                        localStorage.setItem('isLoggedIn', 'true');
+                        localStorage.setItem('user', JSON.stringify({ name: 'Admin User', email: form.email }));
+                        alert('Login successful!');
+                        router.push('/dashboard');
+                    } else {
+                        alert('Invalid credentials. Try: admin@example.com / admin123');
+                    }
+                };
+                
+                return { form, handleLogin };
+            }
+        };
+
+        const Register = {
+            template: `
+                <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+                    <div class="max-w-md w-full space-y-8">
+                        <div>
+                            <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">Create your account</h2>
+                        </div>
+                        <form @submit.prevent="handleRegister" class="mt-8 space-y-6">
+                            <div class="space-y-4">
+                                <input v-model="form.name" type="text" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Full name">
+                                <input v-model="form.email" type="email" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Email address">
+                                <input v-model="form.password" type="password" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Password">
+                                <input v-model="form.confirmPassword" type="password" required 
+                                       class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                       placeholder="Confirm password">
+                            </div>
+                            
+                            <button type="submit" class="w-full py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                                Create Account
+                            </button>
+                            
+                            <div class="text-center">
+                                <router-link to="/login" class="font-medium text-blue-600 hover:text-blue-500">
+                                    Already have an account? Sign in
+                                </router-link>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const router = VueRouter.useRouter();
+                const form = reactive({ name: '', email: '', password: '', confirmPassword: '' });
+                
+                const handleRegister = () => {
+                    if (form.password !== form.confirmPassword) {
+                        alert('Passwords do not match');
+                        return;
+                    }
+                    localStorage.setItem('isLoggedIn', 'true');
+                    localStorage.setItem('user', JSON.stringify({ name: form.name, email: form.email }));
+                    alert('Registration successful!');
+                    router.push('/dashboard');
+                };
+                
+                return { form, handleRegister };
+            }
+        };
+
+        const Dashboard = {
+            template: `
+                <div class="max-w-7xl mx-auto px-4 py-12">
+                    <div class="mb-8">
+                        <h1 class="text-3xl font-bold text-gray-900">Dashboard</h1>
+                        <p class="text-gray-600">Welcome back, {{ user?.name }}!</p>
+                    </div>
+                    
+                    <!-- Stats -->
+                    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-gray-900">Total Blogs</h3>
+                            <p class="text-3xl font-bold text-blue-600">{{ stats.totalBlogs }}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-gray-900">Published</h3>
+                            <p class="text-3xl font-bold text-green-600">{{ stats.published }}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-gray-900">Drafts</h3>
+                            <p class="text-3xl font-bold text-yellow-600">{{ stats.drafts }}</p>
+                        </div>
+                        <div class="bg-white p-6 rounded-lg shadow">
+                            <h3 class="text-lg font-semibold text-gray-900">Total Views</h3>
+                            <p class="text-3xl font-bold text-purple-600">{{ stats.totalViews }}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions -->
+                    <div class="bg-white p-6 rounded-lg shadow mb-8">
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+                        <div class="flex flex-wrap gap-4">
+                            <button class="bg-blue-600 text-white px-6 py-2 rounded-lg hover:bg-blue-700">Create New Blog</button>
+                            <router-link to="/profile" class="bg-gray-600 text-white px-6 py-2 rounded-lg hover:bg-gray-700">Edit Profile</router-link>
+                            <router-link to="/blogs" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700">View All Blogs</router-link>
+                        </div>
+                    </div>
+                    
+                    <!-- Recent Activity -->
+                    <div class="bg-white p-6 rounded-lg shadow">
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between py-2 border-b">
+                                <span>Created "Getting Started with Vue 3"</span>
+                                <span class="text-sm text-gray-500">2 hours ago</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2 border-b">
+                                <span>Updated profile information</span>
+                                <span class="text-sm text-gray-500">1 day ago</span>
+                            </div>
+                            <div class="flex items-center justify-between py-2">
+                                <span>Published "TailwindCSS Tips"</span>
+                                <span class="text-sm text-gray-500">3 days ago</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `,
+            setup() {
+                const user = ref(JSON.parse(localStorage.getItem('user') || '{}'));
+                const stats = ref({
+                    totalBlogs: 12,
+                    published: 8,
+                    drafts: 4,
+                    totalViews: 1250
+                });
+                
+                return { user, stats };
+            }
+        };
+
+        const About = {
+            template: `
+                <div class="max-w-4xl mx-auto px-4 py-12">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">About Vue 3 Blog</h1>
+                    <div class="prose prose-lg max-w-none">
+                        <p class="text-xl text-gray-700 mb-6">
+                            Vue 3 Blog is a modern, full-featured blogging platform built with the latest web technologies 
+                            to provide an exceptional user experience for both content creators and readers.
+                        </p>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Features</h2>
+                        <ul class="list-disc list-inside text-gray-700 mb-6">
+                            <li>Modern Vue 3 with Composition API</li>
+                            <li>Lightning-fast development with Vite</li>
+                            <li>Beautiful UI with TailwindCSS</li>
+                            <li>Secure JWT authentication</li>
+                            <li>Role-based access control</li>
+                            <li>Responsive design for all devices</li>
+                            <li>Rich text editing capabilities</li>
+                            <li>Search and filtering functionality</li>
+                        </ul>
+                        <h2 class="text-2xl font-bold text-gray-900 mb-4">Technology Stack</h2>
+                        <ul class="list-disc list-inside text-gray-700">
+                            <li><strong>Frontend:</strong> Vue 3, Vite, TailwindCSS, Vue Router, Pinia</li>
+                            <li><strong>Backend:</strong> Node.js, Express, MySQL/PostgreSQL</li>
+                            <li><strong>Authentication:</strong> JWT tokens with refresh mechanism</li>
+                            <li><strong>Deployment:</strong> Docker, CI/CD ready</li>
+                        </ul>
+                    </div>
+                </div>
+            `
+        };
+
+        const Contact = {
+            template: `
+                <div class="max-w-2xl mx-auto px-4 py-12">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-8 text-center">Contact Us</h1>
+                    <form @submit.prevent="handleSubmit" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                            <input v-model="form.name" type="text" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input v-model="form.email" type="email" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                            <input v-model="form.subject" type="text" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                            <textarea v-model="form.message" rows="6" required 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Send Message
+                        </button>
+                    </form>
+                </div>
+            `,
+            setup() {
+                const form = reactive({ name: '', email: '', subject: '', message: '' });
+                
+                const handleSubmit = () => {
+                    alert('Thank you for your message! We will get back to you soon.');
+                    Object.assign(form, { name: '', email: '', subject: '', message: '' });
+                };
+                
+                return { form, handleSubmit };
+            }
+        };
+
+        const Profile = {
+            template: `
+                <div class="max-w-2xl mx-auto px-4 py-12">
+                    <h1 class="text-3xl font-bold text-gray-900 mb-8">Profile Settings</h1>
+                    <form @submit.prevent="handleUpdate" class="space-y-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Full Name</label>
+                            <input v-model="form.name" type="text" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                            <input v-model="form.email" type="email" required 
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Bio</label>
+                            <textarea v-model="form.bio" rows="4" 
+                                      class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                      placeholder="Tell us about yourself..."></textarea>
+                        </div>
+                        <button type="submit" class="bg-blue-600 text-white py-2 px-6 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            Update Profile
+                        </button>
+                    </form>
+                </div>
+            `,
+            setup() {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                const form = reactive({ 
+                    name: user.name || '', 
+                    email: user.email || '', 
+                    bio: user.bio || '' 
+                });
+                
+                const handleUpdate = () => {
+                    localStorage.setItem('user', JSON.stringify(form));
+                    alert('Profile updated successfully!');
+                };
+                
+                return { form, handleUpdate };
+            }
+        };
+
+        // Router setup
+        const routes = [
+            { path: '/', component: Home },
+            { path: '/blogs', component: BlogList },
+            { path: '/blogs/:id', component: BlogDetail },
+            { path: '/login', component: Login },
+            { path: '/register', component: Register },
+            { path: '/dashboard', component: Dashboard },
+            { path: '/profile', component: Profile },
+            { path: '/about', component: About },
+            { path: '/contact', component: Contact }
+        ];
+
+        const router = createRouter({
+            history: createWebHashHistory(),
+            routes
+        });
+
+        // Main App
+        const app = createApp({
+            setup() {
+                const isLoggedIn = ref(localStorage.getItem('isLoggedIn') === 'true');
+                
+                const logout = () => {
+                    localStorage.removeItem('isLoggedIn');
+                    localStorage.removeItem('user');
+                    isLoggedIn.value = false;
+                    router.push('/');
+                };
+                
+                return { isLoggedIn, logout };
+            }
+        });
+
+        app.use(router);
+        app.mount('#app');
+    </script>
+</body>
+</html>

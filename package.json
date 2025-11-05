@@ -1,0 +1,40 @@
+{
+  "name": "structure-vue3-project-2025",
+  "version": "1.0.0",
+  "description": "Vue 3 project with complete structure",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "test": "vitest",
+    "test:e2e": "cypress open",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix --ignore-path .gitignore",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "vue": "^3.4.21",
+    "vue-router": "^4.3.0",
+    "pinia": "^2.1.7",
+    "axios": "^1.6.8",
+    "vue-i18n": "^9.10.2",
+    "@tailwindcss/forms": "^0.5.7",
+    "@headlessui/vue": "^1.7.19",
+    "@heroicons/vue": "^2.1.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.2.0",
+    "tailwindcss": "^3.4.1",
+    "autoprefixer": "^10.4.18",
+    "postcss": "^8.4.35",
+    "sass": "^1.71.1",
+    "@types/node": "^20.11.25",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.22.0",
+    "prettier": "^3.2.5",
+    "vitest": "^1.3.1",
+    "cypress": "^13.6.6",
+    "@vue/test-utils": "^2.4.4"
+  }
+}
