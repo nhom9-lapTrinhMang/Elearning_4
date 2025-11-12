@@ -1,10 +1,10 @@
-# 🌐 Vue 3 Blog — Hướng Dẫn Chạy Dự Án
+# Vue 3 Blog — Hướng Dẫn Chạy Dự Án
 
 ## 🔹 Bước 1: Chuẩn bị môi trường
 - Cài **Node.js** (phiên bản >= 16): [https://nodejs.org/](https://nodejs.org/)
 - Cài **Visual Studio Code**: [https://code.visualstudio.com/](https://code.visualstudio.com/)
 
-> ⚠️ Mở terminal trong VS Code và gõ `npm -v`  
+> Mở terminal trong VS Code và gõ `npm -v`  
 > Nếu không hiển thị phiên bản, Node.js chưa được cài đúng.
 
 
